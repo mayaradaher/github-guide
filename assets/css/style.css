@@ -37,7 +37,7 @@
 .title {
     color: #415a77;
     margin-top: 5rem;
-    margin-bottom: .5rem;
+    margin-bottom: 1rem;
 }
 
 
@@ -52,11 +52,6 @@
 
 /* Button Search
 ----------------------------------------------*/
-.button-search {
-    margin-left: 22rem;
-    margin-right: 22rem;
-}
-
 .dbc-button {
     font-size: 16px;
     color: #6c757d;
@@ -132,12 +127,19 @@
     background-color: #f0f0f0;
 }
 
-
-/* Markdown
+/* Alert
 ----------------------------------------------*/
-.markdown-content {
-    padding: 20px;
-    background-color: #f8f9fa;
+.alert {
+    margin-top: 1rem;
+    margin-bottom: 0;
+    margin-left: 2.6rem;
+    margin-right: 2.6rem;
+}
+
+/* Card
+----------------------------------------------*/
+.card-answer {
+    padding: 10px;
     font-family: "Roboto", sans-serif;
     color: #636462;
     font-size: 16px;
@@ -146,6 +148,7 @@
     border: 1px solid #dee2e6;
     border-radius: 8px;
     line-height: 22px;
+    margin-top: 2rem;
     margin-left: 6rem;
     margin-right: 6rem;
 }
@@ -177,7 +180,7 @@
 /* Media Queries
 ----------------------------------------------*/
 @media (max-width: 768px) {
-    .markdown-content {
+    .card-answer {
         margin-left: 2rem;
         margin-right: 2rem;
     }

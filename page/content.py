@@ -1,6 +1,6 @@
 import os
 from dotenv import load_dotenv
-from dash import callback, html, dcc, Input, Output
+from dash import callback, html, dcc, Input, Output, State, ctx
 import dash_bootstrap_components as dbc
 import dash
 
@@ -59,15 +59,11 @@ SYSTEM_PROMPT = """You are a highly knowledgeable and specialized tutor in GitHu
 Your goal is to help users effectively understand and use GitHub for practical applications and certification.
 
 MANDATORY FORMATTING RULES:
+- NEVER use additional information or further reading with links.
 - Use ##### (five hashes) for the main title - this will be the MEDIUM text
 - Use ###### (six hashes) for small headers - this will be SMALL text
 - Use ###### (six hashes) for small headers - this will be SMALL text
 - NEVER use # (one hashe), ## (two hashes), ### (three hashes), #### (four hashes) and further reading.
-
-MANDATORY RESPONSE STRUCTURE:
-##### [Main Topic Title]
-
-- NEVER use additional information or further reading with links.
 
 Guidelines:
 1. Provide a working example with commands.
@@ -104,12 +100,12 @@ layout = dbc.Container(
                 [
                     # title
                     html.H5(
-                        "Your guide to using GitHub — and passing the GitHub Certifications.",
+                        "Your guide to using GitHub — and passing the GitHub Certifications",
                         className="title text-center",
                     ),
                     # subtitle
                     html.P(
-                        "Based on GitHub's official documentation.",
+                        "Based on GitHub's official documentation",
                         className="subtitle text-center",
                     ),
                     # search button
@@ -122,7 +118,7 @@ layout = dbc.Container(
                             # input
                             dcc.Input(
                                 id="search-input",
-                                placeholder="Search",
+                                placeholder="Enter any question about GitHub.",
                                 className="dbc-button",
                                 debounce=True,
                             ),
@@ -134,13 +130,17 @@ layout = dbc.Container(
                             ),
                         ],
                     ),
+                    # alert area
+                    html.Div(
+                        id="alert_area", className="alert", style={"display": "none"}
+                    ),
                     # answer area
                     dbc.Row(
                         dbc.Col(
                             dcc.Loading(
                                 html.Div(
                                     id="answer_area",
-                                    className="mt-4",
+                                    # className="mt-4",
                                     style={"width": "100%"},
                                 ),
                                 type="circle",
@@ -148,13 +148,14 @@ layout = dbc.Container(
                             ),
                             md=12,
                         ),
-                        className="mt-3",
+                        # className="mt-3",
                     ),
                 ],
                 md=12,
             ),
             justify="center",  # center row
         ),
+        dcc.Store(id="chat-history", data=[]),  # componente para guardar histórico
         html.Br(),
     ],
     fluid=True,
@@ -165,66 +166,157 @@ layout = dbc.Container(
 )
 
 
-# Callback - generate answer
+# Formatting callback outputs
+def make_return(
+    alert=None,
+    alert_display=None,
+    card=None,
+    clear_display="none",
+    input_value="",
+    history=None,
+):
+
+    if alert is None:
+        alert = ""
+    if alert_display is None:
+        alert_display = "block" if alert else "none"
+
+    if card is None:
+        card = ""
+
+    if history is None:
+        history = []
+
+    return (
+        alert,  # alert_area children
+        {"display": alert_display},  # alert_area style
+        card,  # answer_area children
+        {"display": clear_display},  # clear-button style
+        input_value,  # search-input value
+        history,
+    )
+
+
+# Callback - generate answer and update chat history
 @callback(
-    Output("answer_area", "children"),
-    Input("search-input", "value"),
-    prevent_initial_call=True,
-)
-def generate_answer(user_query):
-    if not user_query:
-        return dbc.Alert(
-            [
-                html.I(className="fas fa-exclamation-triangle me-2"),
-                "Please enter a question to get an answer.",
-            ],
-            color="warning",
-        )
-
-    if len(user_query) < 10:
-        return dbc.Alert(
-            [
-                html.I(className="fas fa-exclamation-triangle me-2"),
-                "Please enter a complete question with at least 10 characters.",
-            ],
-            color="warning",
-        )
-
-    try:
-        response = qa_chain.invoke({"input": user_query})
-        answer = response.get("answer")
-
-        return html.Div(
-            [
-                dcc.Markdown(
-                    answer,
-                    className="markdown-content",
-                )
-            ]
-        )
-    except Exception as e:
-        return dbc.Alert(
-            [
-                html.I(className="fas fa-circle-xmark me-2"),
-                f"An error occurred: {e}. Check your API key, model name, and quotas.",
-            ],
-            color="danger",
-        )
-
-
-# Callback - clear button
-@callback(
-    [Output("clear-button", "style"), Output("search-input", "value")],
+    [
+        Output("alert_area", "children"),
+        Output("alert_area", "style"),
+        Output("answer_area", "children"),
+        Output("clear-button", "style"),
+        Output("search-input", "value"),
+        Output("chat-history", "data"),
+    ],
     [Input("search-input", "value"), Input("clear-button", "n_clicks")],
+    State("chat-history", "data"),
     prevent_initial_call=True,
 )
-def clear_button(search_value, clear_clicks):
-    ctx = dash.callback_context
+def handle_interactions(user_query, clear_clicks, chat_history):
+    def make_return(
+        alert=None,
+        alert_display=None,
+        card=None,
+        clear_display="none",
+        input_value="",
+        history=None,
+    ):
+        if alert is None:
+            alert = ""
+        if alert_display is None:
+            alert_display = "block" if alert else "none"
+        if card is None:
+            card = ""
+        if history is None:
+            history = []
+        return (
+            alert,
+            {"display": alert_display},
+            card,
+            {"display": clear_display},
+            input_value,
+            history,
+        )
 
-    if ctx.triggered and ctx.triggered[0]["prop_id"] == "clear-button.n_clicks":
-        return {"display": "none"}, ""
+    triggered_id = ctx.triggered_id
 
-    if search_value and len(search_value.strip()) > 0:
-        return {"display": "block"}, search_value
-    else:
-        return {"display": "none"}, search_value
+    if triggered_id == "clear-button":
+        return make_return(history=[])
+
+    # Função para montar o card do histórico
+    def build_history_card(chat_history):
+        if not chat_history:
+            return ""
+        interactions = []
+        for question, answer_text in reversed(chat_history):
+            markdown_content = (
+                f"**Question:** {question}\n\n**Answer:**\n\n{answer_text}"
+            )
+            interactions.append(dcc.Markdown(markdown_content))
+        return dbc.Card(
+            dbc.CardBody(interactions),
+            className="card-answer",
+        )
+
+    card = build_history_card(chat_history)
+
+    if triggered_id == "search-input":
+
+        if not user_query:
+            alert = dbc.Alert(
+                [
+                    html.I(className="fas fa-exclamation-triangle me-2"),
+                    "Please enter a question to get an answer.",
+                ],
+                color="warning",
+            )
+            return make_return(alert=alert, card=card, history=chat_history)
+
+        if len(user_query) < 10:
+            alert = dbc.Alert(
+                [
+                    html.I(className="fas fa-exclamation-triangle me-2"),
+                    "Please enter a complete question with at least 10 characters.",
+                ],
+                color="warning",
+            )
+            return make_return(
+                alert=alert,
+                card=card,
+                clear_display="block",
+                input_value=user_query,
+                history=chat_history,
+            )
+
+        try:
+            response = qa_chain.invoke({"input": user_query})
+            answer = response.get("answer")
+
+            chat_history.append((user_query, answer))
+            card = build_history_card(chat_history)
+
+            return make_return(card=card, clear_display="block", history=chat_history)
+
+        except Exception as e:
+            alert = dbc.Alert(
+                [
+                    html.I(className="fas fa-circle-xmark me-2"),
+                    f"An error occurred: {e}. Check your API key, model name, and quotas.",
+                ],
+                color="danger",
+            )
+            return make_return(
+                alert=alert,
+                card=card,
+                clear_display="block",
+                input_value=user_query,
+                history=chat_history,
+            )
+
+    return (
+        dash.no_update,
+        dash.no_update,
+        dash.no_update,
+        dash.no_update,
+        dash.no_update,
+        dash.no_update,
+    )
