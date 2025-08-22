@@ -25,13 +25,14 @@ def load_faiss_index_with_embeddings(path: str = path):
     embeddings = HuggingFaceEmbeddings(
         model_name="sentence-transformers/all-MiniLM-L6-v2"
     )
+    return FAISS.load_local(path, embeddings, allow_dangerous_deserialization=True)
 
-    vector_store = FAISS.load_local(
-        path,
-        embeddings,
-        allow_dangerous_deserialization=True,
-    )
-    return vector_store
+    # vector_store = FAISS.load_local(
+    #     path,
+    #     embeddings,
+    #     allow_dangerous_deserialization=True,
+    # )
+    # return vector_store
 
 
 vector_store = load_faiss_index_with_embeddings()
@@ -41,18 +42,20 @@ vector_store = load_faiss_index_with_embeddings()
 load_dotenv()
 hf_api_key = os.getenv("HUGGINGFACEHUB_API_TOKEN")
 
-llm = None
-if hf_api_key:
-    base_llm = HuggingFaceEndpoint(
-        repo_id="mistralai/Mistral-7B-Instruct-v0.3",
-        task="text-generation",
-        huggingfacehub_api_token=hf_api_key,
-        temperature=0.8,
-        max_new_tokens=512,
+llm = (
+    ChatHuggingFace(
+        llm=HuggingFaceEndpoint(
+            repo_id="mistralai/Mistral-7B-Instruct-v0.3",
+            task="text-generation",
+            huggingfacehub_api_token=hf_api_key,
+            temperature=0.8,
+            max_new_tokens=512,
+        )
     )
-    llm = ChatHuggingFace(llm=base_llm)
-    print("✓ Hugging Face model loaded successfully.")
-
+    if hf_api_key
+    else None
+)
+print("✓ Hugging Face model loaded successfully.")
 
 # Prompt
 SYSTEM_PROMPT = """You are a highly knowledgeable and specialized tutor in GitHub. 
@@ -93,108 +96,65 @@ qa_chain = create_retrieval_chain(retriever=retriever, combine_docs_chain=doc_ch
 
 
 # Layout
+def create_search_input():
+    return html.Div(
+        className="icon-container mx-auto",
+        style={"maxWidth": "700px"},
+        children=[
+            html.I(className="fas fa-magnifying-glass icon-search"),
+            dcc.Input(
+                id="search-input",
+                placeholder="Enter any question about GitHub.",
+                className="dbc-button",
+                debounce=True,
+            ),
+            html.I(
+                id="clear-button",
+                className="fas fa-times icon-clear",
+                style={"display": "none"},
+            ),
+        ],
+    )
+
+
 layout = dbc.Container(
     [
         dbc.Row(
             dbc.Col(
                 [
-                    # title
                     html.H5(
                         "Your guide to using GitHub — and passing the GitHub Certifications",
                         className="title text-center",
                     ),
-                    # subtitle
                     html.P(
                         "Based on GitHub's official documentation",
                         className="subtitle text-center",
                     ),
-                    # search button
-                    html.Div(
-                        className="icon-container mx-auto",
-                        style={"maxWidth": "700px"},
-                        children=[
-                            # search icon
-                            html.I(className="fas fa-magnifying-glass icon-search"),
-                            # input
-                            dcc.Input(
-                                id="search-input",
-                                placeholder="Enter any question about GitHub.",
-                                className="dbc-button",
-                                debounce=True,
-                            ),
-                            # clear button
-                            html.I(
-                                id="clear-button",
-                                className="fas fa-times icon-clear",
-                                style={"display": "none"},
-                            ),
-                        ],
-                    ),
-                    # alert area
+                    create_search_input(),
                     html.Div(
                         id="alert_area", className="alert", style={"display": "none"}
                     ),
-                    # answer area
                     dbc.Row(
                         dbc.Col(
                             dcc.Loading(
-                                html.Div(
-                                    id="answer_area",
-                                    # className="mt-4",
-                                    style={"width": "100%"},
-                                ),
+                                html.Div(id="answer_area", style={"width": "100%"}),
                                 type="circle",
                                 color="#415a77",
                             ),
                             md=12,
-                        ),
-                        # className="mt-3",
+                        )
                     ),
                 ],
                 md=12,
             ),
-            justify="center",  # center row
+            justify="center",
         ),
-        dcc.Store(id="chat-history", data=[]),  # componente para guardar histórico
+        dcc.Store(id="chat-history", data=[]),
         html.Br(),
     ],
     fluid=True,
-    style={
-        "min-height": "83vh",
-        "background-color": "#f8f9fa",
-    },
+    style={"min-height": "83vh", "background-color": "#f8f9fa"},
 )
-
-
-# Formatting callback outputs
-def make_return(
-    alert=None,
-    alert_display=None,
-    card=None,
-    clear_display="none",
-    input_value="",
-    history=None,
-):
-
-    if alert is None:
-        alert = ""
-    if alert_display is None:
-        alert_display = "block" if alert else "none"
-
-    if card is None:
-        card = ""
-
-    if history is None:
-        history = []
-
-    return (
-        alert,  # alert_area children
-        {"display": alert_display},  # alert_area style
-        card,  # answer_area children
-        {"display": clear_display},  # clear-button style
-        input_value,  # search-input value
-        history,
-    )
 
 
 # Callback - generate answer and update chat history
@@ -212,7 +172,7 @@ def make_return(
     prevent_initial_call=True,
 )
 def handle_interactions(user_query, clear_clicks, chat_history):
-    def make_return(
+    def make_return(  # formatting callback outputs
         alert=None,
         alert_display=None,
         card=None,
@@ -238,32 +198,34 @@ def handle_interactions(user_query, clear_clicks, chat_history):
         )
 
     triggered_id = ctx.triggered_id
-
     if triggered_id == "clear-button":
         return make_return(history=[])
 
-    # history card - agora um card por interação
+    # history card
     def build_history_card(chat_history):
-        if not chat_history:
-            return ""
-
-        cards = []
-        for question, answer_text in reversed(chat_history):
-            markdown_content = f"**Question:** {question}\n\n**Answer:**\n{answer_text}"
-            cards.append(
+        return (
+            [
                 dbc.Card(
-                    dbc.CardBody(dcc.Markdown(markdown_content)),
+                    dbc.CardBody(
+                        dcc.Markdown(f"**Question:** {q}\n\n**Answer:**\n{a}")
+                    ),
                     className="card-answer",
                     style={"margin-bottom": "10px"},
                 )
-            )
-        return cards
+                for q, a in reversed(chat_history)
+            ]
+            if chat_history
+            else ""
+        )
 
     card = build_history_card(chat_history)
 
     if triggered_id == "search-input":
+        # Limpar espaços em branco e verificar se está vazio
+        user_query_cleaned = user_query.strip() if user_query else ""
 
-        if not user_query:
+        # Validação em ordem específica
+        if not user_query_cleaned:  # Campo vazio ou apenas espaços
             alert = dbc.Alert(
                 [
                     html.I(className="fas fa-exclamation-triangle me-2"),
@@ -273,7 +235,7 @@ def handle_interactions(user_query, clear_clicks, chat_history):
             )
             return make_return(alert=alert, card=card, history=chat_history)
 
-        if len(user_query) < 10:
+        elif len(user_query_cleaned) < 10:  # Entre 1 e 9 caracteres
             alert = dbc.Alert(
                 [
                     html.I(className="fas fa-exclamation-triangle me-2"),
@@ -289,15 +251,13 @@ def handle_interactions(user_query, clear_clicks, chat_history):
                 history=chat_history,
             )
 
+        # Se passou nas validações, processar a pergunta
         try:
-            response = qa_chain.invoke({"input": user_query})
+            response = qa_chain.invoke({"input": user_query_cleaned})
             answer = response.get("answer")
-
-            chat_history.append((user_query, answer))
+            chat_history.append((user_query_cleaned, answer))
             card = build_history_card(chat_history)
-
             return make_return(card=card, clear_display="block", history=chat_history)
-
         except Exception as e:
             alert = dbc.Alert(
                 [
