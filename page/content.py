@@ -27,13 +27,6 @@ def load_faiss_index_with_embeddings(path: str = path):
     )
     return FAISS.load_local(path, embeddings, allow_dangerous_deserialization=True)
 
-    # vector_store = FAISS.load_local(
-    #     path,
-    #     embeddings,
-    #     allow_dangerous_deserialization=True,
-    # )
-    # return vector_store
-
 
 vector_store = load_faiss_index_with_embeddings()
 
@@ -48,7 +41,7 @@ llm = (
             repo_id="mistralai/Mistral-7B-Instruct-v0.3",
             task="text-generation",
             huggingfacehub_api_token=hf_api_key,
-            temperature=0.8,
+            temperature=0.2,
             max_new_tokens=512,
         )
     )
@@ -58,13 +51,20 @@ llm = (
 print("✓ Hugging Face model loaded successfully.")
 
 # Prompt
-SYSTEM_PROMPT = """You are a highly knowledgeable and specialized tutor in GitHub. 
-Your goal is to help users effectively understand and use GitHub for practical applications and certification.
+SYSTEM_PROMPT = """You are a highly knowledgeable and specialized tutor in GitHub.
+Your goal is to help users effectively understand and use GitHub for practical applications and exam certification.
+
+SCOPE:
+- You must answer ONLY questions about GitHub and its official documentation.
+- You must use ONLY the provided Documents context. If the context is empty or not clearly relevant to the user's question, you MUST refuse with the template below.
+- Do NOT invent, guess, or use outside knowledge.
+
+REFUSAL TEMPLATE (use exactly this when out of scope or low relevance):
+###### This assistant only answers questions about official GitHub documentation. 
 
 MANDATORY FORMATTING RULES:
 - NEVER use additional information or further reading with links.
 - Use ##### (five hashes) for the main title - this will be the MEDIUM text
-- Use ###### (six hashes) for small headers - this will be SMALL text
 - Use ###### (six hashes) for small headers - this will be SMALL text
 - NEVER use # (one hashe), ## (two hashes), ### (three hashes), #### (four hashes) and further reading.
 
@@ -90,8 +90,13 @@ prompt = ChatPromptTemplate.from_messages(
 # Chain RAG
 doc_chain = create_stuff_documents_chain(llm=llm, prompt=prompt)
 
-retriever = vector_store.as_retriever(search_kwargs={"k": 4})
-
+retriever = vector_store.as_retriever(
+    search_type="similarity_score_threshold",
+    search_kwargs={
+        "k": 6,
+        "score_threshold": 0.7,
+    },
+)
 qa_chain = create_retrieval_chain(retriever=retriever, combine_docs_chain=doc_chain)
 
 
@@ -221,11 +226,9 @@ def handle_interactions(user_query, clear_clicks, chat_history):
     card = build_history_card(chat_history)
 
     if triggered_id == "search-input":
-        # Limpar espaços em branco e verificar se está vazio
         user_query_cleaned = user_query.strip() if user_query else ""
 
-        # Validação em ordem específica
-        if not user_query_cleaned:  # Campo vazio ou apenas espaços
+        if not user_query_cleaned:
             alert = dbc.Alert(
                 [
                     html.I(className="fas fa-exclamation-triangle me-2"),
@@ -235,7 +238,7 @@ def handle_interactions(user_query, clear_clicks, chat_history):
             )
             return make_return(alert=alert, card=card, history=chat_history)
 
-        elif len(user_query_cleaned) < 10:  # Entre 1 e 9 caracteres
+        elif len(user_query_cleaned) < 10:
             alert = dbc.Alert(
                 [
                     html.I(className="fas fa-exclamation-triangle me-2"),
@@ -251,7 +254,6 @@ def handle_interactions(user_query, clear_clicks, chat_history):
                 history=chat_history,
             )
 
-        # Se passou nas validações, processar a pergunta
         try:
             response = qa_chain.invoke({"input": user_query_cleaned})
             answer = response.get("answer")
