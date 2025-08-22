@@ -242,20 +242,22 @@ def handle_interactions(user_query, clear_clicks, chat_history):
     if triggered_id == "clear-button":
         return make_return(history=[])
 
-    # Função para montar o card do histórico
+    # history card - agora um card por interação
     def build_history_card(chat_history):
         if not chat_history:
             return ""
-        interactions = []
+
+        cards = []
         for question, answer_text in reversed(chat_history):
-            markdown_content = (
-                f"**Question:** {question}\n\n**Answer:**\n\n{answer_text}"
+            markdown_content = f"**Question:** {question}\n\n**Answer:**\n{answer_text}"
+            cards.append(
+                dbc.Card(
+                    dbc.CardBody(dcc.Markdown(markdown_content)),
+                    className="card-answer",
+                    style={"margin-bottom": "10px"},
+                )
             )
-            interactions.append(dcc.Markdown(markdown_content))
-        return dbc.Card(
-            dbc.CardBody(interactions),
-            className="card-answer",
-        )
+        return cards
 
     card = build_history_card(chat_history)
 

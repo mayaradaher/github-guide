@@ -36,7 +36,7 @@
 ----------------------------------------------*/
 .title {
     color: #415a77;
-    margin-top: 5rem;
+    margin-top: 3rem;
     margin-bottom: 1rem;
 }
 
@@ -53,6 +53,8 @@
 /* Button Search
 ----------------------------------------------*/
 .dbc-button {
+    font-family: "Roboto", sans-serif;
+
     font-size: 16px;
     color: #6c757d;
     background-color: #fff !important;
@@ -66,7 +68,6 @@
     align-items: center;
     padding: 0 18px;
     cursor: pointer;
-    outline: none;
 }
 
 .dbc-button:hover {
@@ -132,15 +133,14 @@
 .alert {
     margin-top: 1rem;
     margin-bottom: 0;
-    margin-left: 2.6rem;
-    margin-right: 2.6rem;
+    margin-left: 2.4rem;
+    margin-right: 2.4rem;
 }
 
 /* Card
 ----------------------------------------------*/
 .card-answer {
-    padding: 10px;
-    font-family: "Roboto", sans-serif;
+    padding: 5px;
     color: #636462;
     font-size: 16px;
     text-align: left;
