@@ -54,7 +54,6 @@
 ----------------------------------------------*/
 .dbc-button {
     font-family: "Roboto", sans-serif;
-
     font-size: 16px;
     color: #6c757d;
     background-color: #fff !important;
@@ -124,7 +123,7 @@
 }
 
 .icon-clear:hover {
-    color: #333;
+    color: #415a77;
     background-color: #f0f0f0;
 }
 
@@ -140,6 +139,7 @@
 /* Card
 ----------------------------------------------*/
 .card-answer {
+    font-family: "Roboto", sans-serif;
     padding: 5px;
     color: #636462;
     font-size: 16px;
@@ -151,6 +151,31 @@
     margin-top: 2rem;
     margin-left: 6rem;
     margin-right: 6rem;
+}
+
+.icon-card {
+    color: #415a77;
+    margin-right: 10px;
+    background-color: #415a7715;
+    border-radius: 50%;
+    /* Círculo perfeito */
+    width: 32px;
+    /* Largura do círculo */
+    height: 32px;
+    /* Altura do círculo */
+    padding: 8px 0;
+    text-align: center;
+}
+
+/* Estilização para elementos <code> inline */
+code:not([class*="language"]) {
+    background-color: #dee2e6;
+    color: #77415a;
+    font-weight: bold;
+    padding: 2px 4px;
+    border-radius: 3px;
+    font-family: 'Courier New', Consolas, monospace;
+    font-size: 14px;
 }
 
 
@@ -180,7 +205,7 @@
 ----------------------------------------------*/
 @media (max-width: 768px) {
     .card-answer {
-        margin-left: 2rem;
-        margin-right: 2rem;
+        margin-left: 0rem;
+        margin-right: 0rem;
     }
 }

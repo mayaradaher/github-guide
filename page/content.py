@@ -64,9 +64,8 @@ REFUSAL TEMPLATE (use exactly this when out of scope or low relevance):
 
 MANDATORY FORMATTING RULES:
 - NEVER use additional information or further reading with links.
-- Use ##### (five hashes) for the main title - this will be the MEDIUM text
 - Use ###### (six hashes) for small headers - this will be SMALL text
-- NEVER use # (one hashe), ## (two hashes), ### (three hashes), #### (four hashes) and further reading.
+- NEVER use # (one hashe), ## (two hashes), ### (three hashes), #### (four hashes), or ##### (five hashes).
 
 Guidelines:
 1. Provide a working example with commands.
@@ -212,10 +211,58 @@ def handle_interactions(user_query, clear_clicks, chat_history):
             [
                 dbc.Card(
                     dbc.CardBody(
-                        dcc.Markdown(f"**Question:** {q}\n\n**Answer:**\n{a}")
+                        [
+                            html.Div(
+                                [
+                                    html.Div(
+                                        [html.I(className="fas fa-user icon-card")],
+                                    ),
+                                    html.Div(
+                                        [
+                                            html.Strong(
+                                                "Question: ",
+                                            ),
+                                            html.Span(
+                                                q,
+                                            ),
+                                        ],
+                                    ),
+                                ],
+                                style={
+                                    "display": "flex",
+                                    "align-items": "center",
+                                    "margin-bottom": "20px",
+                                },
+                            ),
+                            html.Div(
+                                [
+                                    html.Div(
+                                        [html.I(className="fas fa-robot icon-card")],
+                                    ),
+                                    html.Div(
+                                        [
+                                            html.Div(
+                                                [
+                                                    html.Strong(
+                                                        "Answer",
+                                                    )
+                                                ],
+                                            ),
+                                        ],
+                                    ),
+                                ],
+                                style={
+                                    "display": "flex",
+                                    "align-items": "center",
+                                    "margin-bottom": "20px",
+                                },
+                            ),
+                            dcc.Markdown(
+                                a,
+                            ),
+                        ],
                     ),
                     className="card-answer",
-                    style={"margin-bottom": "10px"},
                 )
                 for q, a in reversed(chat_history)
             ]
