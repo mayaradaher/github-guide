@@ -60,7 +60,7 @@ SCOPE:
 - Do NOT invent, guess, or use outside knowledge.
 
 REFUSAL TEMPLATE (use exactly this when out of scope or low relevance):
-###### This assistant only answers questions about official GitHub documentation. 
+###### This assistant only answers questions about GitHub's official documentation. 
 
 MANDATORY FORMATTING RULES:
 - NEVER use additional information or further reading with links.
@@ -128,7 +128,7 @@ layout = dbc.Container(
             dbc.Col(
                 [
                     html.H5(
-                        "Your guide to using GitHub — and passing the GitHub Certifications",
+                        "Your assistant to using GitHub — and passing the GitHub Certifications",
                         className="title text-center",
                     ),
                     html.P(
