@@ -127,6 +127,7 @@
     background-color: #f0f0f0;
 }
 
+
 /* Alert
 ----------------------------------------------*/
 .alert {
@@ -135,6 +136,7 @@
     margin-left: 2.4rem;
     margin-right: 2.4rem;
 }
+
 
 /* Card
 ----------------------------------------------*/
@@ -158,24 +160,35 @@
     margin-right: 10px;
     background-color: #415a7715;
     border-radius: 50%;
-    /* Círculo perfeito */
     width: 32px;
-    /* Largura do círculo */
     height: 32px;
-    /* Altura do círculo */
     padding: 8px 0;
     text-align: center;
 }
 
-/* Estilização para elementos <code> inline */
+/* <code> inline elements */
 code:not([class*="language"]) {
-    background-color: #dee2e6;
+    background-color: #dee2e680;
     color: #77415a;
     font-weight: bold;
     padding: 2px 4px;
     border-radius: 3px;
     font-family: 'Courier New', Consolas, monospace;
     font-size: 14px;
+}
+
+/* link */
+:root {
+    --bs-link-color-rgb: 118, 65, 90;
+}
+
+/* code */
+.hljs {
+    color: #68553a;
+    font-weight: bold;
+    font-family: 'Courier New', Consolas, monospace;
+    font-size: 14px;
+    background-color: #fff;
 }
 
 

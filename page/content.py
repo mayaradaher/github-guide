@@ -115,7 +115,7 @@ def create_search_input():
             html.I(
                 id="clear-button",
                 className="fas fa-times icon-clear",
-                style={"display": "none"},
+                style={"display": "block"},
             ),
         ],
     )
@@ -176,7 +176,62 @@ layout = dbc.Container(
     prevent_initial_call=True,
 )
 def handle_interactions(user_query, clear_clicks, chat_history):
-    def make_return(  # formatting callback outputs
+
+    def build_history_card(chat_history):
+        return (
+            [
+                dbc.Card(
+                    dbc.CardBody(
+                        [
+                            html.Div(
+                                [
+                                    html.Div(
+                                        [html.I(className="fas fa-user icon-card")],
+                                    ),
+                                    html.Div(
+                                        [
+                                            html.Strong("Question: "),
+                                            html.Span(q),
+                                        ],
+                                    ),
+                                ],
+                                style={
+                                    "display": "flex",
+                                    "align-items": "center",
+                                    "margin-bottom": "20px",
+                                },
+                            ),
+                            html.Div(
+                                [
+                                    html.Div(
+                                        [html.I(className="fas fa-robot icon-card")],
+                                    ),
+                                    html.Div(
+                                        [
+                                            html.Div(
+                                                [html.Strong("Answer")],
+                                            ),
+                                        ],
+                                    ),
+                                ],
+                                style={
+                                    "display": "flex",
+                                    "align-items": "center",
+                                    "margin-bottom": "20px",
+                                },
+                            ),
+                            dcc.Markdown(a),
+                        ],
+                    ),
+                    className="card-answer",
+                )
+                for q, a in reversed(chat_history)
+            ]
+            if chat_history
+            else ""
+        )
+
+    def make_return(
         alert=None,
         alert_display=None,
         card=None,
@@ -202,74 +257,16 @@ def handle_interactions(user_query, clear_clicks, chat_history):
         )
 
     triggered_id = ctx.triggered_id
-    if triggered_id == "clear-button":
-        return make_return(history=[])
 
-    # history card
-    def build_history_card(chat_history):
-        return (
-            [
-                dbc.Card(
-                    dbc.CardBody(
-                        [
-                            html.Div(
-                                [
-                                    html.Div(
-                                        [html.I(className="fas fa-user icon-card")],
-                                    ),
-                                    html.Div(
-                                        [
-                                            html.Strong(
-                                                "Question: ",
-                                            ),
-                                            html.Span(
-                                                q,
-                                            ),
-                                        ],
-                                    ),
-                                ],
-                                style={
-                                    "display": "flex",
-                                    "align-items": "center",
-                                    "margin-bottom": "20px",
-                                },
-                            ),
-                            html.Div(
-                                [
-                                    html.Div(
-                                        [html.I(className="fas fa-robot icon-card")],
-                                    ),
-                                    html.Div(
-                                        [
-                                            html.Div(
-                                                [
-                                                    html.Strong(
-                                                        "Answer",
-                                                    )
-                                                ],
-                                            ),
-                                        ],
-                                    ),
-                                ],
-                                style={
-                                    "display": "flex",
-                                    "align-items": "center",
-                                    "margin-bottom": "20px",
-                                },
-                            ),
-                            dcc.Markdown(
-                                a,
-                            ),
-                        ],
-                    ),
-                    className="card-answer",
-                )
-                for q, a in reversed(chat_history)
-            ]
-            if chat_history
-            else ""
+    if triggered_id == "clear-button":
+        return make_return(
+            card=build_history_card(chat_history),
+            clear_display="block",  # mantém o botão visível
+            input_value="",
+            history=chat_history,
         )
 
+    # history card
     card = build_history_card(chat_history)
 
     if triggered_id == "search-input":
