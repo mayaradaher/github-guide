@@ -137,6 +137,13 @@
     margin-right: 2.4rem;
 }
 
+/* Answer area
+----------------------------------------------*/
+.answer-area {
+    width: 100%;
+    min-height: 400px;
+}
+
 
 /* Card
 ----------------------------------------------*/
@@ -258,5 +265,9 @@
     .card-answer {
         margin-left: 0rem;
         margin-right: 0rem;
+    }
+
+    .answer-area {
+        min-height: 300px;
     }
 }

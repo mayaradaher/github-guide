@@ -141,7 +141,10 @@ layout = dbc.Container(
                     dbc.Row(
                         dbc.Col(
                             dcc.Loading(
-                                html.Div(id="answer_area", style={"width": "100%"}),
+                                html.Div(
+                                    id="answer_area",
+                                    className="answer-area",
+                                ),
                                 type="circle",
                                 color="#415a77",
                             ),
@@ -157,7 +160,7 @@ layout = dbc.Container(
         html.Br(),
     ],
     fluid=True,
-    style={"min-height": "83vh", "background-color": "#f8f9fa"},
+    style={"background-color": "#f8f9fa"},
 )
 
 
