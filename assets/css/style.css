@@ -140,6 +140,40 @@
 
 /* Card
 ----------------------------------------------*/
+.icon-card {
+    color: #415a77;
+    margin-right: 10px;
+    background-color: #415a7715;
+    border-radius: 50%;
+    height: 32px;
+    width: 32px;
+    padding: 8px 0;
+    text-align: center;
+}
+
+/* icon clear card */
+.icon-card-remove {
+    color: #415a77;
+    background-color: #415a7715;
+    border-radius: 50%;
+    height: 26px;
+    width: 26px;
+    padding: 4px 0;
+    text-align: center;
+    position: absolute;
+    cursor: pointer;
+    top: 2px;
+    right: 2px;
+    font-size: 18px;
+    z-index: 10;
+}
+
+.icon-card-remove:hover {
+    color: #415a77 !important;
+    transform: scale(1.1);
+    transition: all 0.2s ease;
+}
+
 .card-answer {
     font-family: "Roboto", sans-serif;
     padding: 5px;
@@ -155,20 +189,21 @@
     margin-right: 6rem;
 }
 
-.icon-card {
-    color: #415a77;
-    margin-right: 10px;
-    background-color: #415a7715;
-    border-radius: 50%;
-    width: 32px;
-    height: 32px;
-    padding: 8px 0;
-    text-align: center;
+.card-answer {
+    transition: all 0.3s ease;
 }
 
-/* <code> inline elements */
-code:not([class*="language"]) {
-    background-color: #dee2e680;
+.card-answer:hover {
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* format answer */
+
+/* code */
+.card-answer code,
+.card-answer pre code,
+.card-answer .hljs {
+    background-color: #415a7715;
     color: #77415a;
     font-weight: bold;
     padding: 2px 4px;
@@ -177,18 +212,21 @@ code:not([class*="language"]) {
     font-size: 14px;
 }
 
-/* link */
-:root {
-    --bs-link-color-rgb: 118, 65, 90;
+/* highlight */
+.card-answer .hljs *,
+.card-answer pre code * {
+    color: #77415a;
+    font-weight: bold;
 }
 
-/* code */
-.hljs {
-    color: #68553a;
+/* link */
+.card-answer a {
+    color: #77415a;
+}
+
+.card-answer a:hover {
+    color: #77415a;
     font-weight: bold;
-    font-family: 'Courier New', Consolas, monospace;
-    font-size: 14px;
-    background-color: #fff;
 }
 
 

@@ -1,6 +1,6 @@
 import os
 from dotenv import load_dotenv
-from dash import callback, html, dcc, Input, Output, State, ctx
+from dash import callback, html, dcc, Input, Output, State, ctx, ALL
 import dash_bootstrap_components as dbc
 import dash
 
@@ -161,7 +161,122 @@ layout = dbc.Container(
 )
 
 
-# Callback - generate answer and update chat history
+def build_history_card(chat_history):
+    return (
+        [
+            dbc.Card(
+                dbc.CardBody(
+                    [
+                        # clear card button
+                        html.Div(
+                            html.I(
+                                id={"type": "remove-card", "index": idx},
+                                className="fas fa-times icon-card-remove",
+                            ),
+                            style={"position": "relative"},
+                        ),
+                        html.Div(
+                            [
+                                html.Div(
+                                    [html.I(className="fas fa-user icon-card")],
+                                ),
+                                html.Div(
+                                    [
+                                        html.Strong("Question: "),
+                                        html.Span(q),
+                                    ],
+                                ),
+                            ],
+                            style={
+                                "display": "flex",
+                                "align-items": "center",
+                                "margin-bottom": "20px",
+                                "padding-right": "25px",
+                            },
+                        ),
+                        html.Div(
+                            [
+                                html.Div(
+                                    [html.I(className="fas fa-robot icon-card")],
+                                ),
+                                html.Div(
+                                    [
+                                        html.Div(
+                                            [html.Strong("Answer")],
+                                        ),
+                                    ],
+                                ),
+                            ],
+                            style={
+                                "display": "flex",
+                                "align-items": "center",
+                                "margin-bottom": "20px",
+                            },
+                        ),
+                        dcc.Markdown(a),
+                    ],
+                ),
+                className="card-answer",
+                style={"position": "relative", "margin-bottom": "10px"},
+            )
+            for idx, (q, a) in enumerate(reversed(chat_history))
+        ]
+        if chat_history
+        else ""
+    )
+
+
+def make_return(
+    alert=None,
+    alert_display=None,
+    card=None,
+    clear_display="none",
+    input_value="",
+    history=None,
+):
+    if alert is None:
+        alert = ""
+    if alert_display is None:
+        alert_display = "block" if alert else "none"
+    if card is None:
+        card = ""
+    if history is None:
+        history = []
+    return (
+        alert,
+        {"display": alert_display},
+        card,
+        {"display": clear_display},
+        input_value,
+        history,
+    )
+
+
+# remove individual cards
+@callback(
+    Output("chat-history", "data", allow_duplicate=True),
+    Input({"type": "remove-card", "index": ALL}, "n_clicks"),
+    State("chat-history", "data"),
+    prevent_initial_call=True,
+)
+def remove_individual_card(n_clicks_list, chat_history):
+    if not any(n_clicks_list) or not chat_history:
+        return dash.no_update
+
+    triggered = ctx.triggered[0]
+    if triggered["prop_id"] != ".":
+        button_id = eval(triggered["prop_id"].split(".")[0])
+        card_index = button_id["index"]
+
+        actual_index = len(chat_history) - 1 - card_index
+
+        if 0 <= actual_index < len(chat_history):
+            chat_history.pop(actual_index)
+
+    return chat_history
+
+
+# Main callback - generate answer and update chat history
 @callback(
     [
         Output("alert_area", "children"),
@@ -171,97 +286,29 @@ layout = dbc.Container(
         Output("search-input", "value"),
         Output("chat-history", "data"),
     ],
-    [Input("search-input", "value"), Input("clear-button", "n_clicks")],
+    [
+        Input("search-input", "value"),
+        Input("clear-button", "n_clicks"),
+        Input("chat-history", "data"),
+    ],
     State("chat-history", "data"),
     prevent_initial_call=True,
 )
-def handle_interactions(user_query, clear_clicks, chat_history):
-
-    def build_history_card(chat_history):
-        return (
-            [
-                dbc.Card(
-                    dbc.CardBody(
-                        [
-                            html.Div(
-                                [
-                                    html.Div(
-                                        [html.I(className="fas fa-user icon-card")],
-                                    ),
-                                    html.Div(
-                                        [
-                                            html.Strong("Question: "),
-                                            html.Span(q),
-                                        ],
-                                    ),
-                                ],
-                                style={
-                                    "display": "flex",
-                                    "align-items": "center",
-                                    "margin-bottom": "20px",
-                                },
-                            ),
-                            html.Div(
-                                [
-                                    html.Div(
-                                        [html.I(className="fas fa-robot icon-card")],
-                                    ),
-                                    html.Div(
-                                        [
-                                            html.Div(
-                                                [html.Strong("Answer")],
-                                            ),
-                                        ],
-                                    ),
-                                ],
-                                style={
-                                    "display": "flex",
-                                    "align-items": "center",
-                                    "margin-bottom": "20px",
-                                },
-                            ),
-                            dcc.Markdown(a),
-                        ],
-                    ),
-                    className="card-answer",
-                )
-                for q, a in reversed(chat_history)
-            ]
-            if chat_history
-            else ""
-        )
-
-    def make_return(
-        alert=None,
-        alert_display=None,
-        card=None,
-        clear_display="none",
-        input_value="",
-        history=None,
-    ):
-        if alert is None:
-            alert = ""
-        if alert_display is None:
-            alert_display = "block" if alert else "none"
-        if card is None:
-            card = ""
-        if history is None:
-            history = []
-        return (
-            alert,
-            {"display": alert_display},
-            card,
-            {"display": clear_display},
-            input_value,
-            history,
-        )
-
+def handle_interactions(user_query, clear_clicks, updated_history, chat_history):
     triggered_id = ctx.triggered_id
+
+    if triggered_id == "chat-history":
+        card = build_history_card(updated_history)
+        return make_return(
+            card=card,
+            clear_display="block" if updated_history else "none",
+            history=updated_history,
+        )
 
     if triggered_id == "clear-button":
         return make_return(
             card=build_history_card(chat_history),
-            clear_display="block",  # mantém o botão visível
+            clear_display="block",
             input_value="",
             history=chat_history,
         )
