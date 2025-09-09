@@ -261,7 +261,7 @@
 
 /* Media Queries
 ----------------------------------------------*/
-@media (max-width: 768px) {
+@media (max-width: 767px) {
     .card-answer {
         margin-left: 0rem;
         margin-right: 0rem;
@@ -270,4 +270,23 @@
     .answer-area {
         min-height: 300px;
     }
+
+    .alert {
+        margin-top: .3rem;
+        margin-bottom: 0;
+        margin-left: .5rem;
+        margin-right: .5rem;
+    }
+}
+
+@media (min-width: 768px) {
+    .card-answer {
+        margin-left: 1rem;
+        margin-right: 1rem;
+    }
+
+    .answer-area {
+        min-height: 270px;
+    }
+
 }

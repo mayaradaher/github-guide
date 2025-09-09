@@ -160,7 +160,7 @@ layout = dbc.Container(
         html.Br(),
     ],
     fluid=True,
-    style={"background-color": "#f8f9fa"},
+    style={"min-height": "83vh"},
 )
 
 
