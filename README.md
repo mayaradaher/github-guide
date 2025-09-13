@@ -24,4 +24,4 @@
 - **LangChain** is used for prompt orchestration, text processing, and embedding integration with large language models (LLMs) for retrieval-augmented generation (RAG).
 - **Hugging Face** provides both the embeddings and the hosted language models accessed via API.
 - **FAISS** is used for efficient vector similarity search and retrieval.
-- **Frontend (Dash)** is the Python framework for building the interactive web user interface.
+- **Frontend (Dash + Plotly)** uses Dash as the Python framework for building the web interface, with Plotly for creating interactive visualizations and data-driven components within the app.
