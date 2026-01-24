@@ -1,18 +1,19 @@
 import os
 from dotenv import load_dotenv
+
+import dash
 from dash import callback, html, dcc, Input, Output, State, ctx, ALL
 import dash_bootstrap_components as dbc
-import dash
 
 # LangChain
 from langchain_core.prompts import ChatPromptTemplate
-from langchain.chains.combine_documents import create_stuff_documents_chain
-from langchain.chains import create_retrieval_chain
+from langchain_core.runnables import RunnablePassthrough
+from langchain_core.output_parsers import StrOutputParser
 
 # Vector store and HF
 from langchain_community.vectorstores import FAISS
+from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_huggingface import (
-    HuggingFaceEmbeddings,
     HuggingFaceEndpoint,
     ChatHuggingFace,
 )
@@ -30,6 +31,13 @@ def load_faiss_index_with_embeddings(path: str = path):
 
 vector_store = load_faiss_index_with_embeddings()
 
+retriever = vector_store.as_retriever(
+    search_type="similarity_score_threshold",
+    search_kwargs={
+        "k": 6,
+        "score_threshold": 0.7,
+    },
+)
 
 # LLM Hugging Face
 load_dotenv()
@@ -86,17 +94,16 @@ prompt = ChatPromptTemplate.from_messages(
 )
 
 
-# Chain RAG
-doc_chain = create_stuff_documents_chain(llm=llm, prompt=prompt)
-
-retriever = vector_store.as_retriever(
-    search_type="similarity_score_threshold",
-    search_kwargs={
-        "k": 6,
-        "score_threshold": 0.7,
-    },
+# RAG Chain
+rag_chain = (
+    {
+        "context": retriever,
+        "input": RunnablePassthrough(),
+    }
+    | prompt
+    | llm
+    | StrOutputParser()
 )
-qa_chain = create_retrieval_chain(retriever=retriever, combine_docs_chain=doc_chain)
 
 
 # Layout
@@ -349,7 +356,7 @@ def handle_interactions(user_query, clear_clicks, updated_history, chat_history)
             )
 
         try:
-            response = qa_chain.invoke({"input": user_query_cleaned})
+            response = rag_chain.invoke({"input": user_query_cleaned})
             answer = response.get("answer")
             chat_history.append((user_query_cleaned, answer))
             card = build_history_card(chat_history)
