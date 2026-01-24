@@ -1,4 +1,4 @@
-from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_community.vectorstores import FAISS
 from langchain_community.document_loaders import JSONLoader
@@ -16,12 +16,13 @@ docs = loader.load()
 text_splitter = RecursiveCharacterTextSplitter(
     chunk_size=1000,
     chunk_overlap=200,
+    separators=["\n\n", "\n", " ", ""],
     length_function=len,
 )
 chunks = text_splitter.split_documents(docs)
 
 # Create embeddings and store in FAISS
-embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
+embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
 
 # Create vector store from the chunks and embeddings
 vector_store = FAISS.from_documents(chunks, embeddings)

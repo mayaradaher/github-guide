@@ -4,6 +4,7 @@ from dotenv import load_dotenv
 import dash
 from dash import callback, html, dcc, Input, Output, State, ctx, ALL
 import dash_bootstrap_components as dbc
+import re
 
 # LangChain
 from langchain_core.prompts import ChatPromptTemplate
@@ -35,7 +36,7 @@ retriever = vector_store.as_retriever(
     search_type="similarity_score_threshold",
     search_kwargs={
         "k": 6,
-        "score_threshold": 0.7,
+        "score_threshold": 0.4,
     },
 )
 
@@ -46,7 +47,7 @@ hf_api_key = os.getenv("HUGGINGFACEHUB_API_TOKEN")
 llm = (
     ChatHuggingFace(
         llm=HuggingFaceEndpoint(
-            repo_id="mistralai/Mistral-7B-Instruct-v0.3",
+            repo_id="Qwen/Qwen2.5-7B-Instruct",
             task="text-generation",
             huggingfacehub_api_token=hf_api_key,
             temperature=0.2,
@@ -72,8 +73,9 @@ REFUSAL TEMPLATE (use exactly this when out of scope or low relevance):
 
 MANDATORY FORMATTING RULES:
 - NEVER use additional information or further reading with links.
-- Use ###### (six hashes) for small headers - this will be SMALL text
-- NEVER use # (one hashe), ## (two hashes), ### (three hashes), #### (four hashes), or ##### (five hashes).
+- You MUST treat ###### as plain section labels, not visual titles.
+- NEVER emphasize headers visually.
+- If you need emphasis, use **bold text**, never headers.
 
 Guidelines:
 1. Provide a working example with commands.
@@ -93,16 +95,33 @@ prompt = ChatPromptTemplate.from_messages(
     ]
 )
 
+from langchain_core.runnables import RunnableLambda
+
+
+def format_docs(docs):
+    return "\n\n".join(doc.page_content for doc in docs)
+
+
+def normalize_markdown_headers(text: str) -> str:
+    """
+    Converte qualquer header Markdown (#, ##, ###, ####, #####)
+    para ######, garantindo tamanho pequeno.
+    """
+    # substitui linhas que começam com 1 a 5 #
+    text = re.sub(r"(?m)^(#{1,5})\s+", "###### ", text)
+    return text
+
 
 # RAG Chain
 rag_chain = (
     {
-        "context": retriever,
+        "context": retriever | RunnableLambda(format_docs),
         "input": RunnablePassthrough(),
     }
     | prompt
     | llm
     | StrOutputParser()
+    | RunnableLambda(normalize_markdown_headers)
 )
 
 
@@ -356,8 +375,8 @@ def handle_interactions(user_query, clear_clicks, updated_history, chat_history)
             )
 
         try:
-            response = rag_chain.invoke({"input": user_query_cleaned})
-            answer = response.get("answer")
+            response = rag_chain.invoke(user_query_cleaned)
+            answer = response
             chat_history.append((user_query_cleaned, answer))
             card = build_history_card(chat_history)
             return make_return(card=card, clear_display="block", history=chat_history)
