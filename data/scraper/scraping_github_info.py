@@ -1,106 +1,90 @@
 import requests
 from bs4 import BeautifulSoup
 import time
-import re
 import json
-from urllib.parse import urljoin
+from urllib.parse import urlparse, urldefrag, urljoin
 
 
-BASE_URL = "https://docs.github.com"
+# Extract links
 HEADERS = {"User-Agent": "Mozilla/5.0"}
 
 
-# Clean names
-def clean_filename(text):
-    return re.sub(r'[\\/*?:"<>|]', "_", text.strip())[:100]
-
-
-# Extract the main links from the homepage
-def get_main_links():
-    response = requests.get(BASE_URL, headers=HEADERS, timeout=20)
+def extract_internal_links(url):
+    response = requests.get(url, headers=HEADERS, timeout=20)
     soup = BeautifulSoup(response.text, "html.parser")
-    items = soup.select("li a[href]")
 
-    links = []
-    for a in items:
-        href = a.get("href")
-        if not href or href.startswith("#"):
+    links = set()
+    for a in soup.select("a[href]"):
+        href = a.get("href").strip()
+
+        if not href:
             continue
 
-        full_url = urljoin(BASE_URL, href)
-        title = a.get_text(strip=True)
-        if title:
-            print(f"Main link: {title} -> {full_url}")
-            links.append((title, full_url))
+        full_url = urljoin(url, href)
+        full_url, _ = urldefrag(full_url)  # remove #anchor
+
+        parsed = urlparse(full_url)
+
+        if parsed.netloc == "docs.github.com" and parsed.path.startswith("/en/"):
+            links.add(full_url)
 
     return links
 
 
-# Extract sub-links from within the pages
-def extract_sub_links(url):
-    try:
-        response = requests.get(url, headers=HEADERS)
-        soup = BeautifulSoup(response.text, "html.parser")
-        list_boxes = soup.select(".List__ListBox-sc-1x7olzq-0.gAwGiF")
+# Extract content
+def extract_content(url):
+    response = requests.get(url, headers=HEADERS, timeout=20)
+    soup = BeautifulSoup(response.text, "html.parser")
 
-        sublinks = []
-        for box in list_boxes:
-            a_tags = box.find_all("a", href=True)
-            for a in a_tags:
-                sub_href = a["href"]
-                sub_text = a.get_text(strip=True)
-                full_sub_url = (
-                    sub_href if sub_href.startswith("http") else f"{BASE_URL}{sub_href}"
-                )
-                print(f"   ↪ Sub-link: {sub_text} -> {full_sub_url}")
-                sublinks.append((sub_text, full_sub_url))
-        return sublinks
-    except Exception as e:
-        print(f"[Error accessing {url}]: {e}")
-        return []
-
-
-# Extract the textual content of a URL
-def extract_content(title, url, prefix=""):
-    try:
-        response = requests.get(url, headers=HEADERS)
-        soup = BeautifulSoup(response.text, "html.parser")
-        main = soup.find("main")
-
-        if not main:
-            print(f"No <main> found at {url}")
-            return None
-
-        text = main.get_text(separator="\n", strip=True)
-        print(f"Scraped content from: {title} ({url})")
-        print(f"--- Start of content: ---\n{text[:200]}...\n--- End of preview ---\n")
-        return {"section": prefix, "subtitle": title, "content": text, "source": url}
-    except Exception as e:
-        print(f"[Error accessing{url}]: {e}")
+    main = soup.find("main")
+    if not main:
         return None
 
+    text = main.get_text(separator="\n", strip=True)
+    title = soup.title.get_text(strip=True) if soup.title else url
 
-# Execute and save JSON file
-def run_full_scraper():
-    all_data = []
+    return {
+        "title": title,
+        "url": url,
+        "content": text,
+    }
 
-    main_links = get_main_links()
-    for main_title, main_url in main_links:
-        main_content = extract_content(main_title, main_url, prefix="main")
-        if main_content:
-            all_data.append(main_content)
 
-        sublinks = extract_sub_links(main_url)
-        for sub_title, sub_url in sublinks:
-            content = extract_content(
-                sub_title, sub_url, prefix=clean_filename(main_title)
-            )
+# Complete crawler (recursive with control)
+def crawl(start_url, max_pages=300):
+    visited = set()
+    to_visit = [start_url]
+    results = []
+
+    while to_visit and len(visited) < max_pages:
+        url = to_visit.pop(0)
+
+        if url in visited:
+            continue
+
+        print(f"Scraping: {url}")
+        visited.add(url)
+
+        try:
+            content = extract_content(url)
             if content:
-                all_data.append(content)
+                results.append(content)
+
+            links = extract_internal_links(url)
+            for link in links:
+                if link not in visited:
+                    to_visit.append(link)
+
             time.sleep(1)
 
-    with open("data/scraper/scraping_github_info.json", "w", encoding="utf-8") as f:
-        json.dump(all_data, f, ensure_ascii=False, indent=2)
+        except Exception as e:
+            print(f"Erro em {url}: {e}")
+
+    return results
 
 
-run_full_scraper()
+# Execute and save
+data = crawl("https://docs.github.com/en/get-started", max_pages=500)
+
+with open("data/scraper/scraping_github_info.json", "w", encoding="utf-8") as f:
+    json.dump(data, f, ensure_ascii=False, indent=2)
